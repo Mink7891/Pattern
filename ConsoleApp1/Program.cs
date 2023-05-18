@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ConsoleApp1
 {
@@ -18,20 +14,14 @@ namespace ConsoleApp1
         void Install();
     }
 
-    // Интерфейс для подвески
-    interface ISuspension
-    {
-        void Install();
-    }
-
     // Интерфейс для фабрики компонентов автомобиля
     interface ICarFactory
     {
         IEngine CreateEngine();
         ITransmission CreateTransmission();
-        ISuspension CreateSuspension();
     }
-    // Реализация двигателя для спорткара
+
+    // Реализация двигателя для спортивного автомобиля
     class SportEngine : IEngine
     {
         public void Install()
@@ -40,25 +30,50 @@ namespace ConsoleApp1
         }
     }
 
-    // Реализация коробки передач для спорткара
+    // Реализация коробки передач для спортивного автомобиля
     class SportTransmission : ITransmission
     {
+        private readonly IMediator mediator;
+
+        public SportTransmission(IMediator mediator)
+        {
+            this.mediator = mediator;
+        }
+
         public void Install()
         {
             Console.WriteLine("Installing sport transmission");
+            mediator.Notify(this, "Sport transmission installed");
         }
     }
 
-    // Реализация подвески для спорткара
-    class SportSuspension : ISuspension
+    // Реализация двигателя для обычного автомобиля
+    class RegularEngine : IEngine
     {
         public void Install()
         {
-            Console.WriteLine("Installing sport suspension");
+            Console.WriteLine("Installing regular engine");
         }
     }
 
-    // Реализация фабрики компонентов для спорткара
+    // Реализация коробки передач для обычного автомобиля
+    class RegularTransmission : ITransmission
+    {
+        private readonly IMediator mediator;
+
+        public RegularTransmission(IMediator mediator)
+        {
+            this.mediator = mediator;
+        }
+
+        public void Install()
+        {
+            Console.WriteLine("Installing regular transmission");
+            mediator.Notify(this, "Regular transmission installed");
+        }
+    }
+
+    // Реализация фабрики компонентов для спортивного автомобиля
     class SportCarFactory : ICarFactory
     {
         public IEngine CreateEngine()
@@ -68,33 +83,72 @@ namespace ConsoleApp1
 
         public ITransmission CreateTransmission()
         {
-            return new SportTransmission();
-        }
-
-        public ISuspension CreateSuspension()
-        {
-            return new SportSuspension();
+            return new SportTransmission(new CarMediator());
         }
     }
-    // Посредник, который связывает компоненты автомобиля и обрабатывает заказы
-    class CarMediator
-    {
-        private IEngine engine;
-        private ITransmission transmission;
-        private ISuspension suspension;
 
-        public CarMediator(IEngine engine, ITransmission transmission, ISuspension suspension)
+    // Реализация фабрики компонентов для обычного автомобиля
+    class RegularCarFactory : ICarFactory
+    {
+        public IEngine CreateEngine()
         {
-            this.engine = engine;
-            this.transmission = transmission;
-            this.suspension = suspension;
+            return new RegularEngine();
         }
 
-        public void BuildCar()
+        public ITransmission CreateTransmission()
         {
-            engine.Install();
-            transmission.Install();
-            suspension.Install();
+            return new RegularTransmission(new CarMediator());
+        }
+    }
+
+    // Абстрактная фабрика для создания компонентов автомобиля
+    abstract class AbstractCarFactory
+    {
+        public abstract IEngine CreateEngine();
+        public abstract ITransmission CreateTransmission();
+    }
+
+    // Конкретная реализация абстрактной фабрики для спортивного автомобиля
+    class SportCarAbstractFactory : AbstractCarFactory
+    {
+        public override IEngine CreateEngine()
+        {
+            return new SportEngine();
+        }
+
+        public override ITransmission CreateTransmission()
+        {
+            return new SportTransmission(new CarMediator());
+        }
+    }
+
+    // Конкретная реализация абстрактной фабрики для обычного автомобиля
+    class RegularCarAbstractFactory : AbstractCarFactory
+    {
+        public override IEngine CreateEngine()
+        {
+            return new RegularEngine();
+        }
+
+        public override ITransmission CreateTransmission()
+        {
+            return new RegularTransmission(new CarMediator());
+        }
+    }
+
+    // Интерфейс посредника
+    interface IMediator
+    {
+        void Notify(object sender, string message);
+    }
+
+    // Реализация посредника
+    class CarMediator : IMediator
+    {
+        public void Notify(object sender, string message)
+        {
+            Console.WriteLine("Mediator received message: " + message);
+            // Perform coordination actions here
         }
     }
 
@@ -102,19 +156,29 @@ namespace ConsoleApp1
     {
         static void Main(string[] args)
         {
-            // Создаем экземпляр фабрики для спорткара
-            ICarFactory factory = new SportCarFactory();
+            // Создаем экземпляр абстрактной фабрики для спортивного автомобиля
+            AbstractCarFactory sportCarFactory = new SportCarAbstractFactory();
 
-            // Создаем компоненты автомобиля, используя фабрику
-            IEngine engine = factory.CreateEngine();
-            ITransmission transmission = factory.CreateTransmission();
-            ISuspension suspension = factory.CreateSuspension();
+            // Создаем компоненты спортивного автомобиля
+            IEngine sportEngine = sportCarFactory.CreateEngine();
+            ITransmission sportTransmission = sportCarFactory.CreateTransmission();
 
-            // Создаем посредника и передаем ему компоненты автомобиля
-            CarMediator mediator = new CarMediator(engine, transmission, suspension);
+            // Устанавливаем компоненты спортивного автомобиля
+            sportEngine.Install();
+            sportTransmission.Install();
 
-            // Строим автомобиль
-            mediator.BuildCar();
+            Console.WriteLine();
+
+            // Создаем экземпляр абстрактной фабрики для обычного автомобиля
+            AbstractCarFactory regularCarFactory = new RegularCarAbstractFactory();
+
+            // Создаем компоненты обычного автомобиля
+            IEngine regularEngine = regularCarFactory.CreateEngine();
+            ITransmission regularTransmission = regularCarFactory.CreateTransmission();
+
+            // Устанавливаем компоненты обычного автомобиля
+            regularEngine.Install();
+            regularTransmission.Install();
 
             Console.ReadKey();
         }
